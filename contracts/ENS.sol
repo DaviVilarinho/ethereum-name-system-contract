@@ -9,18 +9,19 @@ getValue(string domain, value v) returns (address) QUANDO ENS["TOPICOS"][v] addr
 */
 contract ENS {
     address owner;
-    mapping(string => Domain) ENS;
+    mapping(string => Domain) ENS; // um domínio é uma struct identificada por uma url
     uint baseFee; // este é o custo de máximo: 1 caractere.
 
+    // identificada pelo nome (que não é atributo aqui)
     struct Domain {
         bool initialized; // marca que o owner já inicializou
-        mapping(string => address) addressByValue;
-        mapping(address => string) valuesByAddress;
+        mapping(string => address) addressByValue; // identifica quais endereços são identificáveis com values
+        mapping(address => string) valuesByAddress; // identifica um value por address
     }
 
     constructor(uint fee) {
         owner = msg.sender;
-        baseFee = fee;
+        baseFee = fee; // por padrao vou colocar 100_000 GWEI
     }
 
     modifier onlyOwner() {
@@ -33,15 +34,19 @@ contract ENS {
     }
 
     function requireExistentDomain(string memory domain) private view {
-        // como não modifica é view
+        // como não modifica state é view
         require(ENS[domain].initialized, "Dominio inexistente");
     }
 
-    function isNotSetValue(
+    function isNotSetValueNorAddress(
         string memory domain,
-        string memory value
+        string memory value,
+        address valueOwner
     ) private view returns (bool) {
-        return ENS[domain].addressByValue[value] == address(0);
+        return
+            ENS[domain].addressByValue[value] == address(0) &&
+            keccak256(abi.encode(ENS[domain].valuesByAddress[valueOwner])) ==
+            keccak256(abi.encode(""));
     }
 
     function getWeiNeed(string memory name) private view returns (uint) {
@@ -58,7 +63,7 @@ contract ENS {
             "Nao pode setar string vazia!"
         );
         require(
-            isNotSetValue(domain, value),
+            isNotSetValueNorAddress(domain, value, msg.sender),
             "Ja existe uma relacao com o value"
         );
         require(
@@ -73,7 +78,7 @@ contract ENS {
         string memory domain,
         address domainOwner
     ) public view returns (string memory) {
-        // como não modifica é view
+        // como não modifica é view, gas 0
         requireExistentDomain(domain);
         string memory valueFromMap = ENS[domain].valuesByAddress[domainOwner]; // encontra o valor
         require(bytes(valueFromMap).length != 0, "Endereco Inexistente");
@@ -88,7 +93,7 @@ contract ENS {
         string memory domain,
         string memory value
     ) public view returns (address) {
-        // como não modifica é view
+        // como não modifica é view, gas 0
         requireExistentDomain(domain);
         address domainAddress = ENS[domain].addressByValue[value];
         require(

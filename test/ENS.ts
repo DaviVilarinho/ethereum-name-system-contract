@@ -50,7 +50,7 @@ describe("ENS", () => {
       expect(await ensDeploy.connect(otherAccount)["getValue(string,address)"](newDomain, otherAccount.address)).to.be.equal(newValue);
     })
 
-    it("Só um set por value ou conta", async () => {
+    it("Só um set por value", async () => {
       const { ensDeploy, owner, otherAccount, baseFee } = await loadFixture(deployENSTest);
 
       let newDomain = "dominioSensacional";
@@ -59,12 +59,12 @@ describe("ENS", () => {
       await ensDeploy.connect(owner).registerDomain(newDomain);
       await ensDeploy.connect(otherAccount).setValue(newDomain, newValue, { value: baseFee });
       await expect(ensDeploy.connect(owner).setValue(newDomain, newValue, { value: baseFee })).to.be.reverted;
+      await ensDeploy.connect(owner).setValue(newDomain, newValue + "outra coisa", { value: baseFee });
       await expect(ensDeploy.connect(otherAccount).setValue(newDomain, newValue, { value: baseFee })).to.be.reverted;
-      await ensDeploy.connect(otherAccount).setValue(newDomain, newValue + "outra coisa", { value: baseFee });
-      await expect(ensDeploy.connect(owner).setValue(newDomain, newValue + "outra coisa", { value: baseFee })).to.be.reverted;
+      await expect(ensDeploy.connect(otherAccount).setValue(newDomain, newValue + "outra coisa", { value: baseFee })).to.be.reverted;
     })
 
-    it("Cobra de Acordo", async () => {
+    it("Cobra de acordo com o número de caracteres", async () => {
       const { ensDeploy, owner, otherAccount, baseFee } = await loadFixture(deployENSTest);
 
       let newDomain = "dominioSensacional";
