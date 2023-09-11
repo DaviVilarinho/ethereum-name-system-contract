@@ -17,6 +17,7 @@ async function main() {
   console.log(`Will register ${domain} with value ${value}`);
 
   await myContract.connect(meOwner).registerDomain(domain);
+  await myContract.connect(meOwner).registerDomain("com");
   await myContract.connect(meOwner).setValue(domain, value, { value: Math.floor(fee / value.length) });
 
   setTimeout(async () => {
