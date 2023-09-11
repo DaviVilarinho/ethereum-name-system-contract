@@ -9,7 +9,7 @@ getValue(string domain, value v) returns (address) QUANDO ENS["TOPICOS"][v] addr
 */
 contract ENS {
     address owner;
-    mapping(string => Domain) ENS; // um domínio é uma struct identificada por uma url
+    mapping(string => Domain) ethereumNameSystem; // um domínio é uma struct identificada por uma url
     uint baseFee; // este é o custo de máximo: 1 caractere.
 
     // identificada pelo nome (que não é atributo aqui)
@@ -29,13 +29,16 @@ contract ENS {
         _;
     }
 
-    function registerDomain(string memory domain) public onlyOwner {
-        ENS[domain].initialized = true; // seta iniciado para garantir em setvalues
+    modifier domainExists(string memory domain) {
+        require(
+            ethereumNameSystem[domain].initialized == true,
+            "Dominio inexistente"
+        );
+        _;
     }
 
-    function requireExistentDomain(string memory domain) private view {
-        // como não modifica state é view
-        require(ENS[domain].initialized, "Dominio inexistente");
+    function registerDomain(string memory domain) public onlyOwner {
+        ethereumNameSystem[domain].initialized = true; // seta iniciado para garantir em setvalues
     }
 
     function isNotSetValueNorAddress(
@@ -44,8 +47,12 @@ contract ENS {
         address valueOwner
     ) private view returns (bool) {
         return
-            ENS[domain].addressByValue[value] == address(0) &&
-            keccak256(abi.encode(ENS[domain].valuesByAddress[valueOwner])) ==
+            ethereumNameSystem[domain].addressByValue[value] == address(0) &&
+            keccak256(
+                abi.encode(
+                    ethereumNameSystem[domain].valuesByAddress[valueOwner]
+                )
+            ) ==
             keccak256(abi.encode(""));
     }
 
@@ -56,8 +63,7 @@ contract ENS {
     function setValue(
         string memory domain,
         string memory value
-    ) public payable {
-        requireExistentDomain(domain);
+    ) public payable domainExists(domain) {
         require(
             keccak256(abi.encode(value)) != keccak256(""),
             "Nao pode setar string vazia!"
@@ -70,20 +76,22 @@ contract ENS {
             getWeiNeed(value) <= msg.value,
             "Voce deve pagar de acordo com o inverso do tamanho do nome."
         );
-        ENS[domain].addressByValue[value] = msg.sender;
-        ENS[domain].valuesByAddress[msg.sender] = value;
+        ethereumNameSystem[domain].addressByValue[value] = msg.sender;
+        ethereumNameSystem[domain].valuesByAddress[msg.sender] = value;
     }
 
     function getValue(
         string memory domain,
         address domainOwner
-    ) public view returns (string memory) {
+    ) public view domainExists(domain) returns (string memory) {
         // como não modifica é view, gas 0
-        requireExistentDomain(domain);
-        string memory valueFromMap = ENS[domain].valuesByAddress[domainOwner]; // encontra o valor
+        string memory valueFromMap = ethereumNameSystem[domain].valuesByAddress[
+            domainOwner
+        ]; // encontra o valor
         require(bytes(valueFromMap).length != 0, "Endereco Inexistente");
         require(
-            ENS[domain].addressByValue[valueFromMap] == msg.sender, // encontra o dono do valor e compara com quem pede
+            ethereumNameSystem[domain].addressByValue[valueFromMap] ==
+                msg.sender, // encontra o dono do valor e compara com quem pede
             "Voce nao e o dono do valor!"
         );
         return valueFromMap;
@@ -92,10 +100,11 @@ contract ENS {
     function getValue(
         string memory domain,
         string memory value
-    ) public view returns (address) {
+    ) public view domainExists(domain) returns (address) {
         // como não modifica é view, gas 0
-        requireExistentDomain(domain);
-        address domainAddress = ENS[domain].addressByValue[value];
+        address domainAddress = ethereumNameSystem[domain].addressByValue[
+            value
+        ];
         require(
             domainAddress != address(0), // garante que não é o endereço 0 (inicializado)
             "Nao existia endereco associado ao valor no dominio"

@@ -1,11 +1,12 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 
 async function main() {
-  const ens = await ethers.deployContract("ENS");
+  const fee = 100000000000000;
+  const ENS = await ethers.getContractFactory("ENS");
+  const ensDeploy = await ENS.deploy(fee);
 
-  await ens.waitForDeployment();
-
-  console.log(`Deploy! at ${ens.target}`);
+  await ensDeploy.waitForDeployment();
+  console.log(`Deploy! at ${ensDeploy.target}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
